@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -140,7 +141,11 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 	if height == "" {
 		height = "25"
 	}
-	reqPath := rootPath + "/" + userReqPath
+	reqPath := rootPath + "/" + strings.TrimPrefix(userReqPath, "/")
+	// escape userReqPath for subequent links
+	userReqPathDisplay := userReqPath
+	userReqPath = url.QueryEscape(userReqPath)
+	fmt.Printf("ViewHandler: %s -> %s\n", r.URL.RequestURI(), reqPath)
 	f, err := os.Stat(reqPath)
 	if os.IsNotExist(err) {
 		t, _ := template.ParseFiles("templates/message.gtpl")
@@ -285,14 +290,14 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		options = options + "</span><span style=\"margin-right: 10px\">"
 		options = options + "<a href=\"thumbgen?path=" +
-			userReqPath + "&done=" + userReqPath +
+			url.QueryEscape(userReqPath) + "&done=" + url.QueryEscape(userReqPath) +
 			"&" + curVid + "&" + curScaling + "&" + curHeight +
 			"\">" +
 			"TG </a>"
 		options = options + "</span>"
 		page := ViewPage{
-			Header: userReqPath,
-			Up: "./view?path=" + filepath.Dir("./"+userReqPath) +
+			Header: userReqPathDisplay,
+			Up: "./view?path=" + url.QueryEscape(filepath.Dir("./"+userReqPathDisplay)) +
 				"&" + curVid + "&" + curScaling + "&" + curHeight,
 			Options: template.HTML(options),
 			MPre:    "",
@@ -305,10 +310,11 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 		fileCount := 0
 		unknownCount := 0
 		for _, file := range files {
+			fileNameEscaped := url.QueryEscape(file.Name())
 			if file.IsDir() {
 				page.Dirs = append(page.Dirs,
 					template.HTML("<p>&#128193; <a href=\"./view?"+
-						"path="+userReqPath+"/"+file.Name()+
+						"path="+userReqPath+"/"+fileNameEscaped+
 						"&"+curVid+
 						"&"+curScaling+
 						"&"+curHeight+
@@ -317,7 +323,7 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 			} else if scaling == "List" { //&& isListable(file.Name()) {
 				page.Others = append(page.Others,
 					template.HTML("<p><a href=\""+
-						cur+"/"+file.Name()+"\">"+
+						cur+"/"+fileNameEscaped+"\">"+
 						file.Name()+"</a></p>"))
 				fileCount++
 			} else if scaling == "ListPreview" && isListable(file.Name()) {
@@ -325,28 +331,28 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 				page.MPost = template.HTML("</table>")
 				if isImage(file.Name()) {
 					prefix := "<tr><td style=\"vertical-align: middle;\"><a href=\"" + cur + "/" +
-						file.Name() + "\">"
+						fileNameEscaped + "\">"
 					suffix := "</a></td><td><a href=\"" + cur + "/" +
-						file.Name() + "\"><span style=\"vertical-align: middle;\">" + file.Name() + "</span></a></td></tr>"
+						fileNameEscaped + "\"><span style=\"vertical-align: middle;\">" + file.Name() + "</span></a></td></tr>"
 					imgAttr := "height=\"100px\" style=\"vertical-align: middle;\""
 					page.Medias = append(page.Medias,
 						template.HTML(prefix+"<img src=\"./view?path="+
-							userReqPath+"/"+file.Name()+"\" "+
+							userReqPath+"/"+fileNameEscaped+"\" "+
 							imgAttr+"> "+suffix))
 				} else if isVideo(file.Name()) {
 					prefix := "<tr><td style=\"vertical-align: middle;\"><a href=\"" + cur + "/" +
-						file.Name() + "\">"
+						fileNameEscaped + "\">"
 					suffix := "</a></td><td><a href=\"" + cur + "/" +
-						file.Name() + "\"><span style=\"vertical-align: middle;\">" + file.Name() + "</span></a></td></tr>"
+						fileNameEscaped + "\"><span style=\"vertical-align: middle;\">" + file.Name() + "</span></a></td></tr>"
 					imgAttr := "height=\"100px\" style=\"vertical-align: middle;\""
 					page.Medias = append(page.Medias,
 						template.HTML(prefix+"<img src=\"./view?path="+
-							userReqPath+"/"+file.Name()+".thumb.jpg\" "+
+							userReqPath+"/"+fileNameEscaped+".thumb.jpg\" "+
 							imgAttr+"> "+suffix))
 				} else {
 					page.Others = append(page.Others,
 						template.HTML("<p><a href=\""+
-							cur+"/"+file.Name()+"\">"+
+							cur+"/"+fileNameEscaped+"\">"+
 							file.Name()+"</a></p>"))
 					fileCount++
 				}
@@ -367,12 +373,12 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 					suffix := ""
 					if scaling == "Thumbnail" {
 						prefix = "<a href=\"" + cur + "/" +
-							file.Name() + "\">"
+							fileNameEscaped + "\">"
 						suffix = "</a>"
 					}
 					page.Medias = append(page.Medias,
 						template.HTML(prefix+"<img src=\"./view?path="+
-							userReqPath+"/"+file.Name()+"\" "+
+							userReqPath+"/"+fileNameEscaped+"\" "+
 							imgAttr+">"+suffix+" "))
 					fileCount++
 				} else if isVideo(file.Name()) {
@@ -381,15 +387,15 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 					video := ""
 					if showVid != "Yes" {
 						prefix = "<a href=\"" + cur + "/" +
-							file.Name() + "\">"
+							fileNameEscaped + "\">"
 						video = "<img " + imgAttr +
 							" src=\"" + cur + "/" +
-							file.Name() + ".thumb.jpg\">"
+							fileNameEscaped + ".thumb.jpg\">"
 						suffix = "</a>"
 					} else {
 						video = "<video " + imgAttr +
 							" src=\"" + cur + "/" +
-							file.Name() + "\" autoplay loop muted></video>"
+							fileNameEscaped + "\" autoplay loop muted></video>"
 					}
 					page.Medias = append(page.Medias,
 						template.HTML(prefix+video+suffix))
@@ -397,7 +403,7 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 				} else if isListable(file.Name()) {
 					page.Others = append(page.Others,
 						template.HTML("<p><a href=\""+
-							cur+"/"+file.Name()+"\">"+
+							cur+"/"+fileNameEscaped+"\">"+
 							file.Name()+"</a></p>"))
 					fileCount++
 				} else if !strings.HasSuffix(file.Name(), ".thumb.jpg") {
@@ -405,7 +411,7 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		page.DirInfo = fmt.Sprintf("%s: %d%s%d%s%d%s", userReqPath,
+		page.DirInfo = fmt.Sprintf("%s: %d%s%d%s%d%s", userReqPathDisplay,
 			len(page.Dirs), " dirs, ", fileCount, " media files and ",
 			unknownCount, " unknown files")
 		t, _ := template.ParseFiles("templates/view.gtpl")
@@ -593,7 +599,18 @@ func ThumbnailGenerator(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, msg)
 		return
 	}
-	userReqPath := r.URL.Query().Get("path")
+	userReqPath, err := url.QueryUnescape(r.URL.Query().Get("path"))
+	if err != nil {
+		t, _ := template.ParseFiles("templates/message.gtpl")
+		msg := MessagePage{
+			Header: "Failed to unescape path",
+			Message: template.HTML(
+				"<p>Failed to check status for  '" + r.URL.Query().Get("path") + "'</p>",
+			),
+		}
+		t.Execute(w, msg)
+		return
+	}
 	done := r.URL.Query().Get("done")
 	curVid := "showvid=" + r.URL.Query().Get("showvid")
 	curScaling := "scaling=" + r.URL.Query().Get("scaling")
