@@ -144,7 +144,14 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 	reqPath := rootPath + "/" + strings.TrimPrefix(userReqPath, "/")
 	// escape userReqPath for subequent links
 	userReqPathDisplay := userReqPath
-	userReqPath = url.QueryEscape(userReqPath)
+	userReqSegments := strings.Split(userReqPath, "/")
+	userReqPath = ""
+	for i, userReqSegment := range userReqSegments {
+		if i != 0 {
+			userReqPath += "/"
+		}
+		userReqPath += url.QueryEscape(userReqSegment)
+	}
 	fmt.Printf("ViewHandler: %s -> %s\n", r.URL.RequestURI(), reqPath)
 	f, err := os.Stat(reqPath)
 	if os.IsNotExist(err) {
@@ -297,7 +304,7 @@ func ViewHandler(w http.ResponseWriter, r *http.Request) {
 		options = options + "</span>"
 		page := ViewPage{
 			Header: userReqPathDisplay,
-			Up: "./view?path=" + url.QueryEscape(filepath.Dir("./"+userReqPathDisplay)) +
+			Up: "./view?path=" + filepath.Dir("./"+userReqPath) +
 				"&" + curVid + "&" + curScaling + "&" + curHeight,
 			Options: template.HTML(options),
 			MPre:    "",
