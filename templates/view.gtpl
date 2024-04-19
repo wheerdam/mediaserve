@@ -38,6 +38,7 @@
 			<div style="padding: 5px">
 				<a href="{{.Up}}" style="margin-right: 15px">&#9652; Up</a>
 				<button onclick="toggleUpload()">Upload</button>
+				<button style="margin-left: 5px" onclick="toggleShutdown()">Shutdown</button>
 			</div>			
 			<div id="upload" style="display: none; padding: 8px; box-sizing: border-box; width: 100%; border: 1px solid red">
 				<form enctype="multipart/form-data" action="/upload" method="post">
@@ -51,11 +52,25 @@
 					<input type="submit" value="Get" style="width: 80px">
 				</form>
 			</div>
+			<div id="shutdown" style="display: none; padding: 8px; box-sizing: border-box; width: 100%; border: 1px solid red">
+				<form action="/shutdown" method="post">
+					<input type="submit" value="SHUTDOWN SYSTEM" style="width: 80px" onclick="return confirm('Are you sure?')">
+				</form>
+			</div>
 		</div>
     </body>
 	<script>
 		function toggleUpload() {
 			var x = document.getElementById("upload");
+			if(x.style.display === "none") {
+				x.style.display = "block";
+				window.scrollTo(0,document.body.scrollHeight);
+			} else {
+				x.style.display = "none";
+			}
+		}
+		function toggleShutdown() {
+			var x = document.getElementById("shutdown");
 			if(x.style.display === "none") {
 				x.style.display = "block";
 				window.scrollTo(0,document.body.scrollHeight);

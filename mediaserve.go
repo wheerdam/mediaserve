@@ -698,6 +698,34 @@ func ThumbnailGenerator(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ShutdownHandler(w http.ResponseWriter, r *http.Request) {
+	s := session.Get(r)
+	if s == nil {
+		t, _ := template.ParseFiles("templates/message.gtpl")
+		msg := MessagePage{
+			Header: "Not Logged In",
+			Message: template.HTML(
+				"<p>You were not logged in</p>" +
+					"<p><a href=\"./login\">Login</a></p>",
+			),
+		}
+		t.Execute(w, msg)
+		return
+	} else {
+		cmd := exec.Command("/usr/bin/shutdown", "now")
+		cmd.Run()
+		t, _ := template.ParseFiles("templates/message.gtpl")
+		msg := MessagePage{
+			Header: "System Shut Down",
+			Message: template.HTML(
+				"<p>System is shutting down</p>",
+			),
+		}
+		t.Execute(w, msg)
+		return
+	}
+}
+
 func isImage(name string) bool {
 	lName := strings.ToLower(name)
 	return strings.HasSuffix(lName, ".png") ||
@@ -751,6 +779,7 @@ func main() {
 	http.HandleFunc("/logout", LogoutHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/get", GetHandler)
+	http.HandleFunc("/shutdown", ShutdownHandler)
 	http.HandleFunc("/", RootHandler)
 	if len(os.Args) == 6 {
 		err = http.ListenAndServeTLS(os.Args[4], os.Args[5], os.Args[6], nil)
