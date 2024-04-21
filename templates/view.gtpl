@@ -54,7 +54,7 @@
 			</div>
 			<div id="shutdown" style="display: none; padding: 8px; box-sizing: border-box; width: 100%; border: 1px solid red">
 				<form action="/shutdown" method="post">
-					<input type="submit" value="SHUTDOWN SYSTEM" style="width: 80px" onclick="return confirm('Are you sure?')">
+					<input type="submit" value="SHUTDOWN SYSTEM" onclick="return confirm('Are you sure?')">
 				</form>
 			</div>
 		</div>
